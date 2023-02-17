@@ -18,7 +18,7 @@ import Location from "../../assets/images/postImg/location.svg";
 import AddPhoto from "../../assets/images/addPhoto.svg";
 import Delete from "../../assets/images/trash.svg";
 
-export const CreatePostsScreen = ({ navigation }) => {
+export const CreatePostsScreen = ({ navigation, route }) => {
   const [windowWidth, setWindowWidth] = useState(
     Dimensions.get("window").width
   );
@@ -31,8 +31,9 @@ export const CreatePostsScreen = ({ navigation }) => {
   const [isDisabledPublish, setIsDisabledPublish] = useState(true);
   const [isDelete, setIsDelete] = useState(true);
 
+  const [image, setImage] = useState("");
+
   const titleHandler = (title) => setTitle(title);
-  const locationHandler = (location) => setLocation(location);
 
   useEffect(() => {
     const onChange = () => {
@@ -45,14 +46,14 @@ export const CreatePostsScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    title && location
+    title && location && image
       ? setIsDisabledPublish(false)
       : setIsDisabledPublish(true);
   }, [title, location]);
 
   useEffect(() => {
-    title || location ? setIsDelete(false) : setIsDelete(true);
-  }, [title, location]);
+    title || location || image ? setIsDelete(false) : setIsDelete(true);
+  }, [title, location, image]);
 
   const onPublish = () => {
     if (!title.trim() || !location.trim()) {
@@ -60,18 +61,36 @@ export const CreatePostsScreen = ({ navigation }) => {
       return;
     }
     Alert.alert(`Пост успешно был создан`);
+    const newPost = {
+      id: Date(),
+      imagePost: image,
+      title: title,
+      location: `${location?.latitude}, ${location?.longitude}`,
+      comments: 35,
+      likes: 112,
+    };
     console.log(title, location);
     setTitle("");
     setLocation("");
+    setImage();
     Keyboard.dismiss();
+    navigation.navigate("Posts", { newPost });
   };
 
   const onDelete = () => {
     setTitle("");
     setLocation("");
+    setImage();
     Alert.alert(`Удаление прошло успешно`);
     Keyboard.dismiss();
   };
+
+  useEffect(() => {
+    if (route.params) {
+      setImage(route.params.photo);
+      setLocation(route.params.location);
+    }
+  }, [route.params]);
 
   useEffect(() => {
     async function prepare() {
@@ -105,9 +124,10 @@ export const CreatePostsScreen = ({ navigation }) => {
         <View style={styles.section}>
           <View style={{ ...styles.contentSection, width: windowWidth - 30 }}>
             <TouchableOpacity>
-              <AddPhoto />
+              <AddPhoto onPress={() => navigation.navigate("Camera")} />
             </TouchableOpacity>
           </View>
+
           <View style={styles.contantTitle}>
             <Text style={styles.text}>Загрузите фото</Text>
           </View>
@@ -133,13 +153,13 @@ export const CreatePostsScreen = ({ navigation }) => {
               }}
               onFocus={() => setIsFocusedLocation(true)}
               onBlur={() => setIsFocusedLocation(false)}
-              value={location}
+              value={
+                location ? `${location?.latitude}, ${location?.longitude}` : ""
+              }
               textContentType={"location"}
               placeholder="Местность..."
               cursorColor={"#BDBDBD"}
               placeholderTextColor={"#BDBDBD"}
-              onChangeText={locationHandler}
-              onPressIn={() => navigation.navigate("Map")}
             ></TextInput>
             <Location style={styles.locationIcon} />
           </View>
@@ -195,6 +215,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     borderColor: "#E8E8E8",
+  },
+  image: {
+    height: 240,
+
+    resizeMode: "cover",
+    borderRadius: 8,
   },
   contantTitle: {
     width: "100%",
