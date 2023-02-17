@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import { Camera } from "expo-camera";
 import {
   Alert,
   Keyboard,
@@ -12,13 +13,22 @@ import {
   Text,
   TouchableOpacity,
   Dimensions,
+  Image,
 } from "react-native";
 
 import Location from "../../assets/images/postImg/location.svg";
 import AddPhoto from "../../assets/images/addPhoto.svg";
 import Delete from "../../assets/images/trash.svg";
 
+import { postsScreenArray } from "./../../data/posts";
+
 export const CreatePostsScreen = ({ navigation, route }) => {
+  const [fonts] = useFonts({
+    Roboto: require("../../assets/fonts/Roboto-Regular.ttf"),
+    RobotoMedium: require("../../assets/fonts/Roboto-Medium.ttf"),
+    RobotoBold: require("../../assets/fonts/Roboto-Bold.ttf"),
+  });
+
   const [windowWidth, setWindowWidth] = useState(
     Dimensions.get("window").width
   );
@@ -35,46 +45,27 @@ export const CreatePostsScreen = ({ navigation, route }) => {
 
   const titleHandler = (title) => setTitle(title);
 
-  useEffect(() => {
-    const onChange = () => {
-      const width = Dimensions.get("window").width;
-      setWindowWidth(width);
-    };
-    const dimensionsHandler = Dimensions.addEventListener("change", onChange);
-
-    return () => dimensionsHandler.remove();
-  }, []);
-
-  useEffect(() => {
-    title && location && image
-      ? setIsDisabledPublish(false)
-      : setIsDisabledPublish(true);
-  }, [title, location]);
-
-  useEffect(() => {
-    title || location || image ? setIsDelete(false) : setIsDelete(true);
-  }, [title, location, image]);
-
   const onPublish = () => {
-    if (!title.trim() || !location.trim()) {
+    if (!title.trim() || !location) {
       Alert.alert(`Все поля должны быть заполнены!`);
       return;
     }
-    Alert.alert(`Пост успешно был создан`);
+    Alert.alert(`Ваша публикация прошла успешно`);
+
     const newPost = {
       id: Date(),
-      imagePost: image,
+      img: image,
       title: title,
       location: `${location?.latitude}, ${location?.longitude}`,
       comments: 35,
       likes: 112,
     };
-    console.log(title, location);
+
     setTitle("");
     setLocation("");
     setImage();
     Keyboard.dismiss();
-    navigation.navigate("Posts", { newPost });
+    navigation.navigate("Публикации", { newPost });
   };
 
   const onDelete = () => {
@@ -93,17 +84,31 @@ export const CreatePostsScreen = ({ navigation, route }) => {
   }, [route.params]);
 
   useEffect(() => {
+    const onChange = () => {
+      const width = Dimensions.get("window").width;
+      setWindowWidth(width);
+    };
+    const dimensionsHandler = Dimensions.addEventListener("change", onChange);
+
+    return () => dimensionsHandler.remove();
+  }, []);
+
+  useEffect(() => {
+    title && location && image
+      ? setIsDisabledPublish(false)
+      : setIsDisabledPublish(true);
+  }, [title, location, image]);
+
+  useEffect(() => {
+    title || location || image ? setIsDelete(false) : setIsDelete(true);
+  }, [title, location, image]);
+
+  useEffect(() => {
     async function prepare() {
       await SplashScreen.preventAutoHideAsync();
     }
     prepare();
   }, []);
-
-  const [fonts] = useFonts({
-    Roboto: require("../../assets/fonts/Roboto-Regular.ttf"),
-    RobotoMedium: require("../../assets/fonts/Roboto-Medium.ttf"),
-    RobotoBold: require("../../assets/fonts/Roboto-Bold.ttf"),
-  });
 
   const onLayoutRootView = useCallback(async () => {
     if (fonts) {
@@ -121,12 +126,33 @@ export const CreatePostsScreen = ({ navigation, route }) => {
       style={styles.container}
     >
       <ScrollView>
-        <View style={styles.section}>
-          <View style={{ ...styles.contentSection, width: windowWidth - 30 }}>
-            <TouchableOpacity>
-              <AddPhoto onPress={() => navigation.navigate("Camera")} />
-            </TouchableOpacity>
-          </View>
+        <View style={{ ...styles.section, width: windowWidth }}>
+          {image ? (
+            <View>
+              <Image
+                style={{ ...styles.image, width: windowWidth - 32 }}
+                source={{ uri: image }}
+              />
+              <TouchableOpacity
+                style={{
+                  position: "absolute",
+                  top: 90,
+                  left: (windowWidth - 60 - 32) / 2,
+                }}
+              >
+                <AddPhoto
+                  onPress={() => navigation.navigate("Камера")}
+                  opacity={0.3}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ ...styles.noPhoto, width: windowWidth - 16 * 2 }}>
+              <TouchableOpacity>
+                <AddPhoto onPress={() => navigation.navigate("Камера")} />
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.contantTitle}>
             <Text style={styles.text}>Загрузите фото</Text>
@@ -161,7 +187,14 @@ export const CreatePostsScreen = ({ navigation, route }) => {
               cursorColor={"#BDBDBD"}
               placeholderTextColor={"#BDBDBD"}
             ></TextInput>
-            <Location style={styles.locationIcon} />
+            <Location
+              style={styles.locationIcon}
+              onPress={() =>
+                navigation.navigate("Карта", {
+                  location,
+                })
+              }
+            />
           </View>
           <TouchableOpacity
             style={{
@@ -205,6 +238,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 32,
     paddingHorizontal: 16,
+  },
+  noPhoto: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 240,
+    backgroundColor: "#F6F6F6",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderRadius: 8,
+    borderColor: "#E8E8E8",
   },
   contentSection: {
     alignItems: "center",

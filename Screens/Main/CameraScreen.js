@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Camera } from "expo-camera";
-import { shareAsync } from "expo-sharing";
+
 import * as MediaLibrary from "expo-media-library";
 import * as Location from "expo-location";
 import {
@@ -15,13 +15,12 @@ import {
 import DownloadPhoto from "../../assets/images/downloadPhoto.svg";
 
 const CameraScreen = ({ navigation }) => {
-  const [location, setLocation] = useState(null);
-
-  const [hasCameraPermission, setHasCameraPermission] = useState();
-  const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState();
   const [photo, setPhoto] = useState();
+  const [location, setLocation] = useState(null);
+  const [cameraAllow, setCameraAllow] = useState();
+  const [libraryAllow, setLibraryAllow] = useState();
 
-  const cameraRef = useRef();
+  const camera = useRef();
 
   useEffect(() => {
     (async () => {
@@ -30,48 +29,27 @@ const CameraScreen = ({ navigation }) => {
         Alert.alert("Не удалось определить местоположение");
       }
 
-      const location = await Location.getCurrentPositionAsync({});
+      const location = await Location.getCurrentPositionAsync();
       const coords = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       };
       setLocation(coords);
-    })();
-  }, []);
 
-  useEffect(() => {
-    (async () => {
       const cameraPermission = await Camera.requestCameraPermissionsAsync();
-      const mediaLibraryPermission =
-        await MediaLibrary.requestPermissionsAsync();
-      setHasCameraPermission(cameraPermission.status === "granted");
-      setHasMediaLibraryPermission(mediaLibraryPermission.status === "granted");
-      console.log(cameraPermission);
-      console.log(mediaLibraryPermission);
+      const libraryPermission = await MediaLibrary.requestPermissionsAsync();
+      setCameraAllow(cameraPermission.status === "granted");
+      setLibraryAllow(libraryPermission.status === "granted");
     })();
   }, []);
 
-  if (hasCameraPermission === undefined) {
-    return <Text>Requesting permissions...</Text>;
-  } else if (!hasCameraPermission) {
-    return Alert.alert(
-      "Permission for camera not granted. Please change this in settings."
-    );
-  }
-
-  const takePic = async () => {
-    const newPhoto = await cameraRef.current.takePictureAsync();
+  const takePhoto = async () => {
+    const newPhoto = await camera.current.takePictureAsync();
     setPhoto(newPhoto.uri);
   };
 
   if (photo) {
-    const sharePic = () => {
-      shareAsync(photo.uri).then(() => {
-        setPhoto(undefined);
-      });
-    };
-
-    const savePic = () => {
+    const savePhoto = () => {
       navigation.navigate("Создать публикацию", { photo, location });
     };
 
@@ -79,25 +57,19 @@ const CameraScreen = ({ navigation }) => {
       <View style={styles.container}>
         <Image style={styles.preview} source={{ uri: photo }} />
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={{ ...styles.button, marginRight: 8 }}
-            onPress={sharePic}
-          >
-            <Text style={styles.textButton}>Share photo</Text>
-          </TouchableOpacity>
-          {hasMediaLibraryPermission ? (
+          {libraryAllow ? (
             <TouchableOpacity
               style={{ ...styles.button, marginRight: 8 }}
-              onPress={savePic}
+              onPress={savePhoto}
             >
-              <Text style={styles.textButton}>Save</Text>
+              <Text style={styles.textButton}>Сохранить</Text>
             </TouchableOpacity>
           ) : undefined}
           <TouchableOpacity
             style={styles.button}
             onPress={() => setPhoto(undefined)}
           >
-            <Text style={styles.textButton}>Discard</Text>
+            <Text style={styles.textButton}>Переснять</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -105,16 +77,9 @@ const CameraScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <Camera ref={cameraRef} style={styles.camera}>
-        <TouchableOpacity
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
-            marginBottom: 32,
-          }}
-          onPress={takePic}
-        >
+    <View style={{ width: "100%", height: "100%" }}>
+      <Camera ref={camera} style={styles.camera}>
+        <TouchableOpacity style={styles.takeButton} onPress={takePhoto}>
           <DownloadPhoto />
         </TouchableOpacity>
       </Camera>
@@ -125,50 +90,49 @@ const CameraScreen = ({ navigation }) => {
 export default CameraScreen;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+  },
+
+  preview: {
+    width: "100%",
+    height: "100%",
+    flex: 1,
+  },
+
+  buttonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    height: 70,
+  },
+  button: {
+    width: 150,
+    height: 50,
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: "#FF6C00",
+
+    justifyContent: "center",
+  },
+  textButton: {
+    fontSize: 20,
+
+    textAlign: "center",
+    color: "#FFFFFF",
+  },
   camera: {
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-end",
   },
-
   takeButton: {
-    marginBottom: 32,
-    width: 150,
-    height: 45,
-    padding: 12,
-    borderRadius: 100,
-    backgroundColor: "#FF6C00",
-  },
-  button: {
-    width: 100,
-    height: 45,
-    padding: 12,
-    borderRadius: 100,
-    backgroundColor: "#FF6C00",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    height: 83,
-    backgroundColor: "000",
-  },
-
-  textButton: {
-    fontSize: 16,
-    lineHeight: 19,
-    textAlign: "center",
-    color: "#FFFFFF",
-  },
-
-  container: {
-    flex: 1,
-    alignItems: "center",
     justifyContent: "center",
-  },
-
-  preview: {
-    alignSelf: "stretch",
-    flex: 1,
+    alignItems: "center",
+    textAlign: "center",
+    marginBottom: 20,
   },
 });

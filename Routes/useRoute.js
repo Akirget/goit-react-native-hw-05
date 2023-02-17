@@ -35,7 +35,7 @@ export const useRoute = (isLogin) => {
         component={MapScreen}
       ></MainStack.Screen>
       <MainStack.Screen
-        options={{ headerShown: true }}
+        options={{ headerShown: true, headerTitleAlign: "center" }}
         name="Создать публикацию"
         Create
         Post
@@ -43,8 +43,8 @@ export const useRoute = (isLogin) => {
       ></MainStack.Screen>
 
       <MainStack.Screen
-        options={{ headerShown: true }}
-        name="Camera"
+        options={{ headerShown: true, headerTitleAlign: "center" }}
+        name="Камера"
         component={CameraScreen}
       ></MainStack.Screen>
     </MainStack.Navigator>
