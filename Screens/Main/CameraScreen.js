@@ -35,7 +35,6 @@ const CameraScreen = ({ navigation }) => {
         longitude: location.coords.longitude,
       };
       setLocation(coords);
-
       const cameraPermission = await Camera.requestCameraPermissionsAsync();
       const libraryPermission = await MediaLibrary.requestPermissionsAsync();
       setCameraAllow(cameraPermission.status === "granted");
@@ -47,6 +46,7 @@ const CameraScreen = ({ navigation }) => {
     const newPhoto = await camera.current.takePictureAsync();
     setPhoto(newPhoto.uri);
   };
+  console.log(libraryAllow);
 
   if (photo) {
     const savePhoto = () => {
@@ -59,15 +59,15 @@ const CameraScreen = ({ navigation }) => {
         <View style={styles.buttonContainer}>
           {libraryAllow ? (
             <TouchableOpacity
-              style={{ ...styles.button, marginRight: 8 }}
+              style={{ ...styles.button, marginRight: 30 }}
               onPress={savePhoto}
             >
               <Text style={styles.textButton}>Сохранить</Text>
             </TouchableOpacity>
-          ) : undefined}
+          ) : null}
           <TouchableOpacity
             style={styles.button}
-            onPress={() => setPhoto(undefined)}
+            onPress={() => setPhoto(null)}
           >
             <Text style={styles.textButton}>Переснять</Text>
           </TouchableOpacity>
